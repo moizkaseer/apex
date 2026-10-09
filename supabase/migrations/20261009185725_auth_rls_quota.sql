@@ -1,6 +1,8 @@
--- Builds on the July schema (init_apex_schema, entitlements_unique_index),
--- which enabled RLS on every table but defined no policies, so clients could
--- read and write nothing. This adds:
+-- Builds on the July schema (init_apex_schema, entitlements_unique_index).
+-- That design enabled RLS with no policies on purpose: the client would only
+-- use supabase.auth and reach data through service-role server routes. This
+-- migration switches to direct client access guarded by RLS, so the app reads
+-- and writes its own rows with the publishable key. It adds:
 --   1. owner-only policies on all tables
 --   2. a profile row for every new account
 --   3. profiles.settings for app preferences
