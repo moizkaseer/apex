@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MonoText, SansText } from '@/components/ui';
 import { colors, radii, spacing, onDark } from '@/theme/tokens';
 import { useAppStore } from '@/store/useAppStore';
+import { prepareForAnalysis } from '@/services/image';
 
 /** 5a — meal camera capture: real device viewfinder + shutter, mirrors the design's dark full-bleed camera screen. */
 export default function MealCameraScreen() {
@@ -28,8 +29,8 @@ export default function MealCameraScreen() {
   const onShutter = async () => {
     if (shotTaken) return;
     try {
-      const photo = await cameraRef.current?.takePictureAsync({ base64: true, quality: 0.5 });
-      if (photo?.base64) setLastPhotoBase64(photo.base64);
+      const photo = await cameraRef.current?.takePictureAsync({ quality: 0.8 });
+      if (photo) setLastPhotoBase64(await prepareForAnalysis(photo.uri, photo.width, photo.height));
     } catch (err) {
       console.warn('[meal/camera] capture failed', err);
     }

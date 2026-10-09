@@ -1,4 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 /**
  * Single global store mirroring the interactive `state{}` from the Claude
@@ -174,147 +176,169 @@ export interface AppActions {
 
 const toggleRecord = <T extends Record<number, boolean>>(rec: T, i: number): T => ({ ...rec, [i]: !rec[i] } as T);
 
-export const useAppStore = create<AppState & AppActions>((set, get) => ({
-  athleteName: 'Moiz',
-  readiness: 66,
-  onboardingComplete: false,
+export const useAppStore = create<AppState & AppActions>()(
+  persist(
+    (set) => ({
+      athleteName: 'Moiz',
+      readiness: 66,
+      onboardingComplete: false,
 
-  openDay: 1,
-  openMeal: null,
-  bodyRange: 1,
-  chatStep: 0,
+      openDay: 1,
+      openMeal: null,
+      bodyRange: 1,
+      chatStep: 0,
 
-  sessionOpen: false,
-  macrosOpen: false,
-  aTab: 0,
-  photoOpen: false,
+      sessionOpen: false,
+      macrosOpen: false,
+      aTab: 0,
+      photoOpen: false,
 
-  goal: 0,
-  connected: { 0: true },
-  planReady: false,
+      goal: 0,
+      connected: { 0: true },
+      planReady: false,
 
-  runRep: 2,
-  runPaused: false,
-  setsLogged: 2,
-
-  shotTaken: false,
-  portions: { 0: 1, 1: 1, 2: 1 },
-  lastPhotoBase64: null,
-
-  ppStep: 0,
-  ppPose: 0,
-  openMilestone: 0,
-
-  swapChoice: null,
-  openWhy: 0,
-  coachChoice: null,
-
-  coachToggles: { 0: true, 1: true, 2: false },
-  dataModes: { 0: 2, 1: 2, 2: 1, 3: 0 },
-
-  openPlanDay: 1,
-  openPhase: 1,
-
-  bodyMetric: 0,
-  weighWhyOpen: false,
-
-  pwTier: 1,
-  pwAnnual: true,
-
-  nudgeBudget: 5,
-  nudgeTypes: { 0: true, 1: true, 2: true, 3: false, 4: true },
-
-  raceChecks: { 0: true, 1: true },
-  openLearning: 0,
-
-  respects: { 0: false, 1: true, 2: false },
-  rsvp: null,
-
-  nigZone: 4,
-  nigSev: 0,
-  painToday: 1,
-  openFactor: 0,
-
-  wRep: 2,
-  wFuel: null,
-  wRpe: null,
-
-  toast: null,
-
-  // ── actions ──
-  setAthleteName: (name) => set({ athleteName: name }),
-  setReadiness: (v) => set({ readiness: Math.max(0, Math.min(100, v)) }),
-  completeOnboarding: () => set({ onboardingComplete: true }),
-
-  toggleOpenDay: (i) => set((s) => ({ openDay: s.openDay === i ? null : i })),
-  toggleOpenMeal: (i) => set((s) => ({ openMeal: s.openMeal === i ? null : i })),
-  setBodyRange: (i) => set({ bodyRange: i }),
-  advanceChatStep: () => set((s) => ({ chatStep: Math.min(s.chatStep + 1, 1) })),
-
-  toggleSession: () => set((s) => ({ sessionOpen: !s.sessionOpen })),
-  toggleMacros: () => set((s) => ({ macrosOpen: !s.macrosOpen })),
-  setATab: (i) => set({ aTab: i }),
-  togglePhoto: () => set((s) => ({ photoOpen: !s.photoOpen })),
-
-  setGoal: (i) => set({ goal: i }),
-  toggleConnected: (i) => set((s) => ({ connected: toggleRecord(s.connected, i) })),
-  generatePlan: () => set({ planReady: true }),
-  resetPlan: () => set({ planReady: false }),
-
-  lapDone: () =>
-    set((s) => ({
-      runRep: s.runRep >= 5 ? 2 : s.runRep + 1,
+      runRep: 2,
       runPaused: false,
-    })),
-  togglePause: () => set((s) => ({ runPaused: !s.runPaused })),
-  logSet: () => set((s) => ({ setsLogged: Math.min(5, s.setsLogged + 1) })),
-  undoSet: () => set((s) => ({ setsLogged: Math.max(0, s.setsLogged - 1) })),
+      setsLogged: 2,
 
-  takeShot: () => set({ shotTaken: true }),
-  retakeShot: () => set({ shotTaken: false, lastPhotoBase64: null }),
-  cyclePortion: (i) => set((s) => ({ portions: { ...s.portions, [i]: ((s.portions[i] ?? 1) + 1) % 3 } })),
-  setLastPhotoBase64: (b64) => set({ lastPhotoBase64: b64 }),
+      shotTaken: false,
+      portions: { 0: 1, 1: 1, 2: 1 },
+      lastPhotoBase64: null,
 
-  ppAdvance: () => set((s) => ({ ppStep: s.ppStep >= 2 ? 0 : s.ppStep + 1 })),
-  ppReset: () => set({ ppStep: 0 }),
-  setPpPose: (i) => set({ ppPose: i }),
-  toggleMilestone: (i) => set((s) => ({ openMilestone: s.openMilestone === i ? -1 : i })),
+      ppStep: 0,
+      ppPose: 0,
+      openMilestone: 0,
 
-  acceptSwap: () => set({ swapChoice: 'apply' }),
-  declineSwap: () => set({ swapChoice: 'decline' }),
-  toggleOpenWhy: (i) => set((s) => ({ openWhy: s.openWhy === i ? -1 : i })),
-  acceptPlanSwap: () => set({ coachChoice: 'swap' }),
-  keepPlan: () => set({ coachChoice: 'keep' }),
+      swapChoice: null,
+      openWhy: 0,
+      coachChoice: null,
 
-  toggleCoachPref: (i) => set((s) => ({ coachToggles: toggleRecord(s.coachToggles, i) })),
-  cycleDataMode: (i) => set((s) => ({ dataModes: { ...s.dataModes, [i]: ((s.dataModes[i] ?? 0) + 1) % 3 } })),
+      coachToggles: { 0: true, 1: true, 2: false },
+      dataModes: { 0: 2, 1: 2, 2: 1, 3: 0 },
 
-  toggleOpenPlanDay: (i) => set((s) => ({ openPlanDay: s.openPlanDay === i ? -1 : i })),
-  toggleOpenPhase: (i) => set((s) => ({ openPhase: s.openPhase === i ? -1 : i })),
+      openPlanDay: 1,
+      openPhase: 1,
 
-  setBodyMetric: (i) => set({ bodyMetric: i }),
-  toggleWeighWhy: () => set((s) => ({ weighWhyOpen: !s.weighWhyOpen })),
+      bodyMetric: 0,
+      weighWhyOpen: false,
 
-  setPwTier: (i) => set({ pwTier: i }),
-  setPwAnnual: (annual) => set({ pwAnnual: annual }),
+      pwTier: 1,
+      pwAnnual: true,
 
-  setNudgeBudget: (v) => set({ nudgeBudget: Math.max(1, Math.min(10, v)) }),
-  toggleNudgeType: (i) => set((s) => ({ nudgeTypes: toggleRecord(s.nudgeTypes, i) })),
+      nudgeBudget: 5,
+      nudgeTypes: { 0: true, 1: true, 2: true, 3: false, 4: true },
 
-  toggleRaceCheck: (i) => set((s) => ({ raceChecks: toggleRecord(s.raceChecks, i) })),
-  toggleOpenLearning: (i) => set((s) => ({ openLearning: s.openLearning === i ? -1 : i })),
+      raceChecks: { 0: true, 1: true },
+      openLearning: 0,
 
-  toggleRespect: (i) => set((s) => ({ respects: toggleRecord(s.respects, i) })),
-  setRsvp: (v) => set({ rsvp: v }),
+      respects: { 0: false, 1: true, 2: false },
+      rsvp: null,
 
-  setNigZone: (i) => set({ nigZone: i }),
-  setNigSev: (i) => set({ nigSev: i }),
-  setPainToday: (n) => set({ painToday: n }),
-  toggleOpenFactor: (i) => set((s) => ({ openFactor: s.openFactor === i ? null : i })),
+      nigZone: 4,
+      nigSev: 0,
+      painToday: 1,
+      openFactor: 0,
 
-  wAdvanceRep: () => set((s) => ({ wRep: s.wRep >= 5 ? 0 : s.wRep + 1 })),
-  setWFuel: (v) => set({ wFuel: v }),
-  setWRpe: (n) => set({ wRpe: n }),
+      wRep: 2,
+      wFuel: null,
+      wRpe: null,
 
-  setToast: (i) => set({ toast: i }),
-}));
+      toast: null,
+
+      // ── actions ──
+      setAthleteName: (name) => set({ athleteName: name }),
+      setReadiness: (v) => set({ readiness: Math.max(0, Math.min(100, v)) }),
+      completeOnboarding: () => set({ onboardingComplete: true }),
+
+      toggleOpenDay: (i) => set((s) => ({ openDay: s.openDay === i ? null : i })),
+      toggleOpenMeal: (i) => set((s) => ({ openMeal: s.openMeal === i ? null : i })),
+      setBodyRange: (i) => set({ bodyRange: i }),
+      advanceChatStep: () => set((s) => ({ chatStep: Math.min(s.chatStep + 1, 1) })),
+
+      toggleSession: () => set((s) => ({ sessionOpen: !s.sessionOpen })),
+      toggleMacros: () => set((s) => ({ macrosOpen: !s.macrosOpen })),
+      setATab: (i) => set({ aTab: i }),
+      togglePhoto: () => set((s) => ({ photoOpen: !s.photoOpen })),
+
+      setGoal: (i) => set({ goal: i }),
+      toggleConnected: (i) => set((s) => ({ connected: toggleRecord(s.connected, i) })),
+      generatePlan: () => set({ planReady: true }),
+      resetPlan: () => set({ planReady: false }),
+
+      lapDone: () =>
+        set((s) => ({
+          runRep: s.runRep >= 5 ? 2 : s.runRep + 1,
+          runPaused: false,
+        })),
+      togglePause: () => set((s) => ({ runPaused: !s.runPaused })),
+      logSet: () => set((s) => ({ setsLogged: Math.min(5, s.setsLogged + 1) })),
+      undoSet: () => set((s) => ({ setsLogged: Math.max(0, s.setsLogged - 1) })),
+
+      takeShot: () => set({ shotTaken: true }),
+      retakeShot: () => set({ shotTaken: false, lastPhotoBase64: null }),
+      cyclePortion: (i) => set((s) => ({ portions: { ...s.portions, [i]: ((s.portions[i] ?? 1) + 1) % 3 } })),
+      setLastPhotoBase64: (b64) => set({ lastPhotoBase64: b64 }),
+
+      ppAdvance: () => set((s) => ({ ppStep: s.ppStep >= 2 ? 0 : s.ppStep + 1 })),
+      ppReset: () => set({ ppStep: 0 }),
+      setPpPose: (i) => set({ ppPose: i }),
+      toggleMilestone: (i) => set((s) => ({ openMilestone: s.openMilestone === i ? -1 : i })),
+
+      acceptSwap: () => set({ swapChoice: 'apply' }),
+      declineSwap: () => set({ swapChoice: 'decline' }),
+      toggleOpenWhy: (i) => set((s) => ({ openWhy: s.openWhy === i ? -1 : i })),
+      acceptPlanSwap: () => set({ coachChoice: 'swap' }),
+      keepPlan: () => set({ coachChoice: 'keep' }),
+
+      toggleCoachPref: (i) => set((s) => ({ coachToggles: toggleRecord(s.coachToggles, i) })),
+      cycleDataMode: (i) => set((s) => ({ dataModes: { ...s.dataModes, [i]: ((s.dataModes[i] ?? 0) + 1) % 3 } })),
+
+      toggleOpenPlanDay: (i) => set((s) => ({ openPlanDay: s.openPlanDay === i ? -1 : i })),
+      toggleOpenPhase: (i) => set((s) => ({ openPhase: s.openPhase === i ? -1 : i })),
+
+      setBodyMetric: (i) => set({ bodyMetric: i }),
+      toggleWeighWhy: () => set((s) => ({ weighWhyOpen: !s.weighWhyOpen })),
+
+      setPwTier: (i) => set({ pwTier: i }),
+      setPwAnnual: (annual) => set({ pwAnnual: annual }),
+
+      setNudgeBudget: (v) => set({ nudgeBudget: Math.max(1, Math.min(10, v)) }),
+      toggleNudgeType: (i) => set((s) => ({ nudgeTypes: toggleRecord(s.nudgeTypes, i) })),
+
+      toggleRaceCheck: (i) => set((s) => ({ raceChecks: toggleRecord(s.raceChecks, i) })),
+      toggleOpenLearning: (i) => set((s) => ({ openLearning: s.openLearning === i ? -1 : i })),
+
+      toggleRespect: (i) => set((s) => ({ respects: toggleRecord(s.respects, i) })),
+      setRsvp: (v) => set({ rsvp: v }),
+
+      setNigZone: (i) => set({ nigZone: i }),
+      setNigSev: (i) => set({ nigSev: i }),
+      setPainToday: (n) => set({ painToday: n }),
+      toggleOpenFactor: (i) => set((s) => ({ openFactor: s.openFactor === i ? null : i })),
+
+      wAdvanceRep: () => set((s) => ({ wRep: s.wRep >= 5 ? 0 : s.wRep + 1 })),
+      setWFuel: (v) => set({ wFuel: v }),
+      setWRpe: (n) => set({ wRpe: n }),
+
+      setToast: (i) => set({ toast: i }),
+    }),
+    {
+      name: 'apex.app-state',
+      version: 1,
+      storage: createJSONStorage(() => AsyncStorage),
+      // Only what the user chose or completed survives a restart; transient UI
+      // state (open rows, camera shots, demo screens) starts fresh each launch.
+      partialize: (s) => ({
+        athleteName: s.athleteName,
+        onboardingComplete: s.onboardingComplete,
+        goal: s.goal,
+        connected: s.connected,
+        planReady: s.planReady,
+        coachToggles: s.coachToggles,
+        dataModes: s.dataModes,
+        nudgeBudget: s.nudgeBudget,
+        nudgeTypes: s.nudgeTypes,
+      }),
+    },
+  ),
+);

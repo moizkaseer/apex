@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -8,17 +8,32 @@ import { View } from 'react-native';
 
 import { useAppFonts } from '@/theme/useAppFonts';
 import { colors } from '@/theme/tokens';
+import { useAppStore } from '@/store/useAppStore';
 
 SplashScreen.preventAutoHideAsync();
 
+/** True once saved state has loaded from device storage. */
+function useStoreHydrated() {
+  const [hydrated, setHydrated] = useState(() => useAppStore.persist.hasHydrated());
+  useEffect(() => {
+    if (hydrated) return;
+    return useAppStore.persist.onFinishHydration(() => setHydrated(true));
+  }, [hydrated]);
+  return hydrated;
+}
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();
+  const hydrated = useStoreHydrated();
+  const ready = (fontsLoaded || !!fontError) && hydrated;
 
   useEffect(() => {
-    if (fontsLoaded || fontError) SplashScreen.hideAsync();
-  }, [fontsLoaded, fontError]);
+    if (ready) SplashScreen.hideAsync();
+  }, [ready]);
 
-  if (!fontsLoaded && !fontError) return null;
+  // Keep the splash up until saved state is loaded, so a returning user
+  // isn't briefly routed to onboarding.
+  if (!ready) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

@@ -5,6 +5,7 @@
  * STRAVA_CLIENT_SECRET to be set wherever this is deployed (or `expo start`
  * for local dev).
  */
+import { rateLimit } from '@/server/claude';
 
 const CLIENT_ID = process.env.EXPO_PUBLIC_STRAVA_CLIENT_ID ?? '';
 const CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET ?? '';
@@ -13,6 +14,9 @@ export async function POST(request: Request) {
   if (!CLIENT_ID || !CLIENT_SECRET) {
     return Response.json({ error: 'Strava is not configured on the server (missing client id/secret).' }, { status: 501 });
   }
+
+  const limited = rateLimit(request, 'strava-token', 10);
+  if (limited) return limited;
 
   const body = (await request.json()) as { code?: string; refreshToken?: string };
 
