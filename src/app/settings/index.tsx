@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { router } from 'expo-router';
-import { ScreenContainer, Card, SerifText, MonoText, SansText, ToggleSwitch } from '@/components/ui';
+import { ScreenContainer, Card, SerifText, MonoText, SansText, ToggleSwitch, Button } from '@/components/ui';
 import { colors, radii, spacing } from '@/theme/tokens';
 import { connectionDefs, coachPrefDefs } from '@/data/mock';
 import { useAppStore } from '@/store/useAppStore';
 import { healthkit, strava } from '@/services';
+import { signOut } from '@/services/auth';
 
 export default function Screen() {
   const coachToggles = useAppStore((s) => s.coachToggles);
   const toggleCoachPref = useAppStore((s) => s.toggleCoachPref);
+  const userId = useAppStore((s) => s.userId);
 
   const [healthKitAvailable, setHealthKitAvailable] = useState<boolean | null>(null);
   const [stravaConnected, setStravaConnected] = useState<boolean | null>(null);
@@ -208,13 +210,24 @@ export default function Screen() {
         ))}
       </View>
 
+      {userId ? (
+        <Button
+          label="Sign out"
+          variant="outline"
+          onPress={async () => {
+            await signOut();
+            router.replace('/onboarding/welcome');
+          }}
+        />
+      ) : null}
+
       {/* privacy */}
       <Card tone="muted" radius={radii.md}>
         <SansText size={12.5} color={colors.textSecondary} style={{ lineHeight: 19 }}>
           <MonoText size={9.5} color={colors.primary} upper spaced>
             privacy ·{' '}
           </MonoText>
-          Progress photos are analyzed on-device and never leave your phone unless you share them.
+          Meal photos are sent to our AI provider for analysis. APEX does not store the photo itself — only the foods and macros you log.
         </SansText>
       </Card>
     </ScreenContainer>

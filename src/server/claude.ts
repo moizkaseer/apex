@@ -22,14 +22,20 @@ export function getClient(): Anthropic | null {
 }
 
 // ── rate limiting ──
-// Fixed-window counter per client IP. In-memory, so it is per server
-// instance — enough to stop a leaked URL from draining the API budget until
-// per-user limits arrive with accounts (roadmap Phase 1).
+// Fixed-window burst limiter, in-memory per server instance. Keyed by user
+// id when signed in, else client IP. The durable monthly cap lives in the
+// database (consume_ai_quota); this only smooths short bursts.
 const windows = new Map<string, { start: number; count: number }>();
 
-export function rateLimit(request: Request, bucket: string, limit: number, windowMs = 60_000): Response | null {
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  const key = `${bucket}:${ip}`;
+export function rateLimit(
+  request: Request,
+  bucket: string,
+  limit: number,
+  userId?: string,
+  windowMs = 60_000,
+): Response | null {
+  const who = userId ?? request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const key = `${bucket}:${who}`;
   const now = Date.now();
   const entry = windows.get(key);
 

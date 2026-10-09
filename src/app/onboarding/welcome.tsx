@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MonoText, SerifText, SansText, Button } from '@/components/ui';
@@ -37,10 +37,12 @@ export default function WelcomeScreen() {
         <View style={{ flex: 1 }} />
 
         <View style={{ paddingBottom: 18, gap: 12 }}>
-          <Button label="Build my plan" variant="light" onPress={() => router.push('/onboarding/goal')} />
-          <SansText size={13} color={colors.textOnDarkSecondary} style={{ textAlign: 'center' }}>
-            I already have an account
-          </SansText>
+          <Button label="Build my plan" variant="light" onPress={() => router.push('/onboarding/account')} />
+          <Pressable onPress={() => router.push('/onboarding/account')} hitSlop={8}>
+            <SansText size={13} color={colors.textOnDarkSecondary} style={{ textAlign: 'center' }}>
+              I already have an account
+            </SansText>
+          </Pressable>
         </View>
       </View>
     </SafeAreaView>

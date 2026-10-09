@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 
+import { chargeQuota, requireUser } from '@/server/auth';
 import { FALLBACK_BETA, MODEL, getClient, rateLimit, readJson, upstreamError } from '@/server/claude';
 
 const MealAnalysis = z.object({
@@ -51,7 +52,10 @@ export async function POST(request: Request) {
     return Response.json({ error: 'ANTHROPIC_API_KEY is not configured on the server.' }, { status: 501 });
   }
 
-  const limited = rateLimit(request, 'vision', 10);
+  const auth = await requireUser(request);
+  if ('error' in auth) return auth.error;
+
+  const limited = rateLimit(request, 'vision', 10, auth.user?.id);
   if (limited) return limited;
 
   const read = await readJson(request, MAX_IMAGE_B64 + 1_000);
@@ -63,6 +67,9 @@ export async function POST(request: Request) {
   const { imageBase64, mediaType, kind } = parsed.data;
 
   const image = { type: 'image' as const, source: { type: 'base64' as const, media_type: mediaType, data: imageBase64 } };
+
+  const overQuota = await chargeQuota(auth.user, 'vision');
+  if (overQuota) return overQuota;
 
   try {
     const response =

@@ -4,6 +4,7 @@
  */
 import { z } from 'zod';
 
+import { chargeQuota, requireUser } from '@/server/auth';
 import { FALLBACK_BETA, MODEL, getClient, rateLimit, readJson, upstreamError } from '@/server/claude';
 
 const COACH_SYSTEM_PROMPT = `You are the AI coach inside APEX, a training app for competitive runners, cyclists,
@@ -36,7 +37,10 @@ export async function POST(request: Request) {
     return Response.json({ error: 'ANTHROPIC_API_KEY is not configured on the server.' }, { status: 501 });
   }
 
-  const limited = rateLimit(request, 'chat', 20);
+  const auth = await requireUser(request);
+  if ('error' in auth) return auth.error;
+
+  const limited = rateLimit(request, 'chat', 20, auth.user?.id);
   if (limited) return limited;
 
   const read = await readJson(request, 64_000);
@@ -50,6 +54,9 @@ export async function POST(request: Request) {
   const anthropicMessages = messages.map((m, i) =>
     i === 0 && context ? { role: m.role, content: `Context: ${JSON.stringify(context)}\n\n${m.content}` } : m,
   );
+
+  const overQuota = await chargeQuota(auth.user, 'chat');
+  if (overQuota) return overQuota;
 
   try {
     const response = await client.beta.messages.create({

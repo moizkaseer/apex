@@ -12,6 +12,8 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 export interface AppState {
   // athlete / identity
   athleteName: string;
+  userId: string | null; // Supabase user, null when signed out (session itself persists in supabase-js)
+  authReady: boolean; // initial session check finished
   readiness: number; // 0-100, normally computed — see services/readiness.ts
   onboardingComplete: boolean;
 
@@ -102,6 +104,8 @@ export interface AppState {
 
 export interface AppActions {
   setAthleteName: (name: string) => void;
+  setAuth: (userId: string | null) => void;
+  resetForSignOut: () => void;
   setReadiness: (v: number) => void;
   completeOnboarding: () => void;
 
@@ -179,7 +183,9 @@ const toggleRecord = <T extends Record<number, boolean>>(rec: T, i: number): T =
 export const useAppStore = create<AppState & AppActions>()(
   persist(
     (set) => ({
-      athleteName: 'Moiz',
+      athleteName: '',
+      userId: null,
+      authReady: false,
       readiness: 66,
       onboardingComplete: false,
 
@@ -247,6 +253,9 @@ export const useAppStore = create<AppState & AppActions>()(
 
       // ── actions ──
       setAthleteName: (name) => set({ athleteName: name }),
+      setAuth: (userId) => set({ userId, authReady: true }),
+      resetForSignOut: () =>
+        set({ athleteName: '', onboardingComplete: false, planReady: false, goal: 0, connected: { 0: true } }),
       setReadiness: (v) => set({ readiness: Math.max(0, Math.min(100, v)) }),
       completeOnboarding: () => set({ onboardingComplete: true }),
 

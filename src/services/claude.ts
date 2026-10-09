@@ -1,4 +1,19 @@
+import { getAccessToken } from './supabase';
+
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
+
+/** POSTs JSON to our API with the signed-in user's session token attached. */
+async function postApi(path: string, body: unknown): Promise<Response> {
+  const token = await getAccessToken();
+  return fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+}
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -8,11 +23,7 @@ export interface ChatMessage {
 /** AI coach chat (turn 7). `context` is arbitrary JSON — readiness, recent training, meal log, etc. */
 export async function chatWithCoach(messages: ChatMessage[], context?: Record<string, unknown>): Promise<string> {
   try {
-    const res = await fetch(`${API_BASE}/api/claude/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, context }),
-    });
+    const res = await postApi('/api/claude/chat', { messages, context });
     if (!res.ok) throw new Error(await res.text());
     const json = (await res.json()) as { reply: string };
     return json.reply;
@@ -30,11 +41,7 @@ export interface MealAnalysis {
 /** Meal photo -> macro breakdown (turn 5). base64 excludes the `data:image/...;base64,` prefix. */
 export async function analyzeMealPhoto(base64: string, mediaType = 'image/jpeg'): Promise<MealAnalysis | null> {
   try {
-    const res = await fetch(`${API_BASE}/api/claude/vision`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageBase64: base64, mediaType, kind: 'meal' }),
-    });
+    const res = await postApi('/api/claude/vision', { imageBase64: base64, mediaType, kind: 'meal' });
     if (!res.ok) throw new Error(await res.text());
     return (await res.json()) as MealAnalysis;
   } catch (err) {
@@ -52,11 +59,7 @@ export interface ProgressAnalysis {
 /** Progress photo -> body-comp read (turn 6). */
 export async function analyzeProgressPhoto(base64: string, mediaType = 'image/jpeg'): Promise<ProgressAnalysis | null> {
   try {
-    const res = await fetch(`${API_BASE}/api/claude/vision`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageBase64: base64, mediaType, kind: 'progress' }),
-    });
+    const res = await postApi('/api/claude/vision', { imageBase64: base64, mediaType, kind: 'progress' });
     if (!res.ok) throw new Error(await res.text());
     return (await res.json()) as ProgressAnalysis;
   } catch (err) {

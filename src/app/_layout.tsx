@@ -9,6 +9,7 @@ import { View } from 'react-native';
 import { useAppFonts } from '@/theme/useAppFonts';
 import { colors } from '@/theme/tokens';
 import { useAppStore } from '@/store/useAppStore';
+import { initAuth } from '@/services/session';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -25,7 +26,15 @@ function useStoreHydrated() {
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();
   const hydrated = useStoreHydrated();
-  const ready = (fontsLoaded || !!fontError) && hydrated;
+  const authReady = useAppStore((s) => s.authReady);
+
+  // Start session tracking after saved state loads, so a profile pulled from
+  // the server isn't overwritten by the local copy arriving later.
+  useEffect(() => {
+    if (hydrated) initAuth();
+  }, [hydrated]);
+
+  const ready = (fontsLoaded || !!fontError) && hydrated && authReady;
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();

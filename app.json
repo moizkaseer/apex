@@ -21,7 +21,8 @@
       "entitlements": {
         "com.apple.developer.healthkit": true,
         "com.apple.developer.healthkit.access": []
-      }
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.apex.fitness",
@@ -67,7 +68,8 @@
           "color": "#2f6f4f"
         }
       ],
-      "@kingstinct/react-native-healthkit"
+      "@kingstinct/react-native-healthkit",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true

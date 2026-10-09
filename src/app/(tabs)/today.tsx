@@ -40,7 +40,7 @@ export default function TodayScreen() {
         <View>
           <MonoText size={11}>{dateLabel}</MonoText>
           <SerifText size={30} style={{ marginTop: 2 }}>
-            {athleteName}
+            {athleteName || 'Athlete'}
           </SerifText>
         </View>
         <Pressable
